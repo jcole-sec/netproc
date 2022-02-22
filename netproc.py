@@ -8,7 +8,7 @@ import os
 import psutil
 import time
  
-AD = "-"
+AD = '-'
 AF_INET6 = getattr(socket, 'AF_INET6', object())
 proto_map = {
     (AF_INET, SOCK_STREAM): 'tcp',
@@ -27,7 +27,7 @@ def main():
         for c in psutil.net_connections(kind='inet'):
             print('enumerating network process: ' + str(c.pid or AD))
             laddr = "%s:%s" % (c.laddr)
-            raddr = ""
+            raddr = ''
             if c.raddr:
                 raddr = "%s:%s" % (c.raddr)
             try:
