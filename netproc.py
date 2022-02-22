@@ -1,7 +1,5 @@
 #!/usr/bin/env python
  
-# adapted from source: Giampaolo Rodola's netstat.py
- 
 import socket
 from socket import AF_INET, SOCK_STREAM, SOCK_DGRAM
 import os
