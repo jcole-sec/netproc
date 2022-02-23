@@ -1,6 +1,3 @@
 # netproc
 
-adapted from source: Giampaolo Rodola's netstat.py
-
-
-Retrieve socket usage and associated process details
+Retrieve socket usage and associated process details. Credit to Giampaolo Rodola's netstat.py for project seed.
