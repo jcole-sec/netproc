@@ -6,6 +6,7 @@ import os
 import psutil
 import time
  
+
 AD = '-'
 AF_INET6 = getattr(socket, 'AF_INET6', object())
 proto_map = {
@@ -14,7 +15,8 @@ proto_map = {
     (AF_INET, SOCK_DGRAM): 'udp',
     (AF_INET6, SOCK_DGRAM): 'udp6',
 }
- 
+
+
 def main():
     datetime = time.strftime('%Y%m%d.%H%M')
     hostname = socket.gethostname()
@@ -44,6 +46,7 @@ def main():
                 outfile.write(str(proto_map[(c.family, c.type)]) + ',' +str(laddr) + ',' + str(lhost) + ','+ str(raddr or AD) + ','+ str(rhost or AD) + ',' + str(c.status) + ',' + str(c.pid or AD) + ',-,-,-,-,-' + '\n')
     print('--- Port and process enumeration complete ---')
     input('output written to file: ' + str(os.path.abspath(outfile)))
+ 
  
 if __name__ == '__main__':
     main()
