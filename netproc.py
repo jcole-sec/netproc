@@ -1,14 +1,13 @@
 #!/usr/bin/env python
  
-# adapted from source: Giampaolo Rodola's netstat.py
- 
 import socket
 from socket import AF_INET, SOCK_STREAM, SOCK_DGRAM
 import os
 import psutil
 import time
  
-AD = "-"
+
+AD = '-'
 AF_INET6 = getattr(socket, 'AF_INET6', object())
 proto_map = {
     (AF_INET, SOCK_STREAM): 'tcp',
@@ -16,7 +15,8 @@ proto_map = {
     (AF_INET, SOCK_DGRAM): 'udp',
     (AF_INET6, SOCK_DGRAM): 'udp6',
 }
- 
+
+
 def main():
     datetime = time.strftime('%Y%m%d.%H%M')
     hostname = socket.gethostname()
@@ -27,7 +27,7 @@ def main():
         for c in psutil.net_connections(kind='inet'):
             print('enumerating network process: ' + str(c.pid or AD))
             laddr = "%s:%s" % (c.laddr)
-            raddr = ""
+            raddr = ''
             if c.raddr:
                 raddr = "%s:%s" % (c.raddr)
             try:
@@ -46,6 +46,7 @@ def main():
                 outfile.write(str(proto_map[(c.family, c.type)]) + ',' +str(laddr) + ',' + str(lhost) + ','+ str(raddr or AD) + ','+ str(rhost or AD) + ',' + str(c.status) + ',' + str(c.pid or AD) + ',-,-,-,-,-' + '\n')
     print('--- Port and process enumeration complete ---')
     input('output written to file: ' + str(os.path.abspath(outfile)))
+ 
  
 if __name__ == '__main__':
     main()
