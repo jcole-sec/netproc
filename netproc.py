@@ -9,9 +9,10 @@ from pathlib import Path
 from rich import print
 from rich.progress import track
 
-AD = '-'
+blank = '-'
 AF_INET6 = getattr(socket, 'AF_INET6', object())
 
+# Protocol Name translation
 proto_map = {
     (AF_INET, SOCK_STREAM): 'tcp',
     (AF_INET6, SOCK_STREAM): 'tcp6',
@@ -29,23 +30,27 @@ def main():
 
     with open(outfilename, 'at') as outfile:
 
-        outfile.write('Proto,Local address, Local host, Remote address,Remote host, Status,PID,Process name,PPID,PPID Name,User,Path' + '\n')
+        outfile.write('Proto, Local IP, Local Host, Local Port, Remote address,Remote host, Status,PID,Process name,PPID,PPID Name,User,Path' + '\n')
 
         for c in track(psutil.net_connections(kind='inet')):
 
-            print(f'[-] enumerating network process: {str(c.pid or AD)}')
+            # Process Id (Int)
+            pid = c.pid
+            
+            print(f'[-] enumerating network process: {str(c.pid)}')
 
             # Protocol
             proto = str(proto_map[(c.family, c.type)])
 
             # Local Address
-            laddr = "%s:%s" % (c.laddr)
+            local_ip = c.laddr.ip
+            local_port = c.laddr.port
 
-            # Local Host
+            # Local Host Name
             try:                   
-                lhost = socket.gethostbyaddr(c.laddr[0])[0] or AD
+                lhost = socket.gethostbyaddr(local_ip)[0]
             except:
-                lhost = '-'
+                lhost = blank
 
             # Remote Address
             raddr = ''
@@ -54,31 +59,48 @@ def main():
                         
             # Remote Host
             try:
-                rhost =  socket.gethostbyaddr(c.raddr[0])[0] or AD
+                rhost =  socket.gethostbyaddr(c.raddr[0])[0]
             except:
-                rhost = '-'
+                rhost = blank
             
-
             # Status
+            status = str(c.status)
 
-            # Process Id
+            # Process Name
+            try:
+                pname = str(psutil.Process(c.pid).name())
+            except:
+                pname = blank
 
-
-            # Parent Process Id
-            parpid = str(psutil.Process(c.pid).ppid())
+            # Parent Process Id (Int)
+            try:
+                parpid = psutil.Process(c.pid).ppid()
+            except:
+                parpid = blank
             
             # Parent Process Id Name
-            ppid_name = str(psutil.Process(parpid).name())
+            try:
+                ppid_name = str(psutil.Process(parpid).name())
+            except:
+                ppid_name = blank
 
-            # User
-            user = str(psutil.Process(c.pid).username())
+            # Process User
+            try:
+                puser = str(psutil.Process(c.pid).username())
+            except:
+                puser = blank
 
+            # Process Path
+            try:
+                ppath = str(psutil.Process(c.pid).exe())
+            except:
+                ppath = blank
 
             try:
-                outfile.write(f'{proto},{str(laddr)},{str(lhost)},{str(raddr or AD)},{str(rhost or AD)},{(c.status)},{str(c.pid or AD)},\
-                {str(psutil.Process(c.pid).name())},{parpid},{ppid_name},{user},{str(psutil.Process(c.pid).exe())}\n')        
+                #               'Proto, Local IP, Local Host, Local Port, Remote address,Remote host, Status,PID,Process name,PPID,PPID Name,User,Path'
+                outfile.write(f'{proto},{local_ip},{lhost},{local_port},{str(raddr)},{rhost},{status},{str(c.pid)},{pname},{str(parpid)},{ppid_name},{puser},{ppath}\n')        
             except:
-                outfile.write(f'{str(proto_map[(c.family, c.type)])},{str(laddr)},{str(lhost)},{str(raddr or AD)},{str(rhost or AD)},{str(c.status)},{str(c.pid or AD)},-,-,-,-,-\n')
+                outfile.write(f'{proto},{local_ip},{lhost},{local_port},{str(raddr)},{rhost},{status},{str(c.pid)},-,-,-,-,-\n')
 
     print('[*] Port and process enumeration complete')
     print(f'[*] Output written to file: {str(Path(outfilename))}')
