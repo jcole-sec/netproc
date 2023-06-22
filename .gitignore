@@ -1,2 +1,4 @@
 venv
 *_netproc.csv
+netproc_*.csv
+netproc_*.ndjson
