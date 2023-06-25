@@ -14,7 +14,9 @@ from rich import print
 from rich.progress import track
 from rich.console import Console
 from rich.table import Table
+from IPy import IP
 
+# vars
 blank = '-'
 AF_INET6 = getattr(socket, 'AF_INET6', object())
 
@@ -62,139 +64,230 @@ def parseArguments():
         action=BooleanOptionalAction,
         default=False
     )
+
+    parser.add_argument(
+        '-p', '--public', 
+        help='Filter for processes with connections to or from public IPs.\n\
+    ', 
+        action=BooleanOptionalAction,
+        default=False
+    )
+
+    parser.add_argument(
+        '--debug', 
+        help='Enable additional console output for debugging purposes.\n\
+    ', 
+        action=BooleanOptionalAction,
+        default=False
+    )
     return parser.parse_args()
+
+
+def get_process_attributes(c :psutil._common.sconn, debug :bool):
+
+    """ Returns a dictionary containing relevant data attributes for a network-connected process """
+    
+    pdata = {}
+    
+    # Process Id (Int)
+    pdata['pid'] = str(c.pid)
+    
+    if debug:
+        print(f'[-] enumerating network process: { pdata["pid"] }')
+    
+    # Protocol
+    pdata['proto'] = str(proto_map[(c.family, c.type)])
+    
+    # Local Address
+    pdata['lip'] = str(c.laddr.ip)
+    pdata['lport'] = str(c.laddr.port)
+
+    # Local IP Type
+    try:
+        pdata['lip_type'] = IP(c.laddr.ip).iptype()
+    except:
+        pdata['lip_type'] = blank
+    
+    # Local Host Name
+    try:                   
+        pdata['lhost'] = socket.gethostbyaddr(c.laddr.ip)[0]
+    except:
+        pdata['lhost'] = blank
+    
+    # Remote Address
+    if c.raddr:
+        #raddr = "%s:%s" % (c.raddr)
+        pdata['rip'] = str(c.raddr.ip)
+        pdata['rport'] = str(c.raddr.port)
+    else:
+        pdata['rip'] = blank
+        pdata['rport'] = blank
+             
+    # Remote IP Type
+    try:
+        pdata['rip_type'] = IP(c.raddr.ip).iptype()
+    except:
+        pdata['rip_type'] = blank
+
+    # Remote Host
+    try:
+        pdata['rhost'] =  socket.gethostbyaddr(c.raddr[0])[0]
+    except:
+        pdata['rhost'] = blank
+    
+    # Status
+    pdata['status'] = c.status
+    
+    # Process Name
+    try:
+        pdata['pname'] = psutil.Process(c.pid).name()
+    except:
+        pdata['pname'] = blank
+    
+    # Parent Process Id (Int)
+    try:
+        pdata['ppid'] = psutil.Process(c.pid).ppid()
+    except:
+        pdata['ppid'] = blank
+    
+    # Parent Process Id Name
+    try:
+        pdata['ppid_name'] = psutil.Process(pdata['ppid']).name()
+    except:
+        pdata['ppid_name'] = blank
+    
+    # Process User
+    try:
+        pdata['puser'] = psutil.Process(c.pid).username()
+    except:
+        pdata['puser'] = blank
+    
+    # Process Path
+    try:
+        pdata['ppath'] = psutil.Process(c.pid).exe()
+    except:
+        pdata['ppath'] = blank
+       
+    # Process Command Line Parameters
+    try:
+        pdata['cmdline'] = ' '.join(str(each) for each in psutil.Process(c.pid).cmdline())
+    except:
+        pdata['cmdline'] = blank
+
+    return pdata
+
+def public_address_filter(pdata_list :list):
+    """ Filters process data list to return processes containing public IPs """
+    
+    """
+    # this is slow... (mean test ~10 min)
+    
+    public_pdata_list = []
+
+    for pdata in pdata_list:
+        if (pdata['lip_type'] == 'PUBLIC') or (pdata['rip_type'] == 'PUBLIC'):
+            public_pdata_list.append(pdata)
+            
+    """
+
+    # list comprehension is a bit faster.. (test ~4 min)
+    public_pdata_list = [pdata for pdata in pdata_list if (pdata['lip_type'] == 'PUBLIC') or (pdata['rip_type'] == 'PUBLIC')]
+
+    return public_pdata_list
+
+
+def write_csv(outfile_prefix :str, pdata_list :list):
+
+    """ Writes a process data list to a comma-separated value (CSV) file """
+
+    outfilename = outfile_prefix + '.csv'
+    with open(outfilename, 'at') as outfile:
+
+        outfile.write('Proto, Local IP, Local Host, Local Port, Remote address,Remote host, Status,PID,Process name,PPID,PPID Name,User,Path,Command Line' + '\n')
+
+        for pdata in pdata_list:
+            try:
+                #               'Proto, Local IP, Local Host, Local Port, Remote IP, Remote host, Remote Port, Status,PID,Process name,PPID,PPID Name,User,Path,Cmdline'
+                outfile.write(f"{pdata['proto']},{pdata['lip']},{pdata['lhost']},{pdata['lport']},{pdata['rip']},{pdata['rhost']},{pdata['rport']},{pdata['status']},{pdata['pid']},{pdata['pname']},{str(pdata['ppid'])},{pdata['ppid_name']},{pdata['puser']},{pdata['ppath']},{pdata['cmdline']}\n")        
+            except:
+                outfile.write(f"{pdata['proto']},{pdata['lip']},{pdata['lhost']},{pdata['lport']},{pdata['rip']},{pdata['rhost']},{pdata['rport']},{pdata['status']},{pdata['pid']},-,-,-,-,-,-\n")
+    
+    print(f'[*] Output written to file: {str(Path(outfilename))}')
+
+
+def write_json(outfile_prefix :str, pdata_list :list):
+
+    """ Writes a process data list to a newline-delimited (ND) JSON file """
+
+    outfilename = outfile_prefix + '.ndjson'
+
+    with open(outfilename, 'at') as outfile:
+        for pdata in pdata_list:
+            outfile.write(json.dumps(pdata),'\n')
+        
+    print(f'[*] Output written to file: {str(Path(outfilename))}')
+
+
+def create_display_table(hostname :str, pdata_list :list):
+
+    """ Create a table containing process data for visualization """
+    
+    # Sort the list based on process name key
+    pdata_list.sort(key=lambda x: x['pname'])
+
+    # Rich table configution settings   
+    table = Table(title=f'Process Data for: {hostname}')
+    table.add_column("Process Name", style="cyan")
+    table.add_column("PID", style="dim cyan", no_wrap=True)
+    table.add_column("Loc Host", style="cyan", no_wrap=True)
+    table.add_column("Loc IP", style="dim cyan", no_wrap=True)
+    table.add_column("Loc Port", style="dim cyan", no_wrap=True)
+    table.add_column("Rem Host", style="cyan", no_wrap=True)
+    table.add_column("Rem IP", style="dim cyan", no_wrap=True)
+    table.add_column("Rem Port", style="dim cyan", no_wrap=True)
+    for pdata in pdata_list:
+        table.add_row(pdata['pname'], pdata['pid'],pdata['lhost'],pdata['lip'],pdata['lport'],pdata['rhost'],pdata['rip'],pdata['rport'])
+
+    return table
+
 
 def main():
 
     options = parseArguments()
+    debug = options.debug
     
     # set output file name details
     datetime = time.strftime('%Y%m%d.%H%M')
     hostname = socket.gethostname()
-
-    if options.csv:
-        outfilename  = f'netproc_{hostname}_{datetime}.csv'
-    
-    if options.json:
-        outfilename  = f'netproc_{hostname}_{datetime}.ndjson'
-        
+    outfile_prefix = f'netproc_{hostname}_{datetime}'
+       
 
     print('[*] Port and process enumeration initiated')
 
-    with open(outfilename, 'at') as outfile:
+    process_list = []
 
-        if options.csv:
-            outfile.write('Proto, Local IP, Local Host, Local Port, Remote address,Remote host, Status,PID,Process name,PPID,PPID Name,User,Path,Command Line' + '\n')
+    for connected_process in track(psutil.net_connections(kind='inet')): # track iteration progress (rich library visualization)
+        process_list.append(get_process_attributes(connected_process, debug))
+
+    if options.public:
+        process_list = public_address_filter(process_list)
+
+    if options.csv:
+        write_csv(outfile_prefix, process_list)
+
+    if options.json:
+        write_json(outfile_prefix, process_list)
+   
+    if options.display:
         
-        if options.display:
-            # Rich table configution settings   
-            table = Table(title=f'Process Data for: {hostname}')
-            table.add_column("PID", style="cyan", no_wrap=True)
-            table.add_column("Process Name", style="dim cyan")
+        display_table = create_display_table(hostname, process_list)
 
-
-        pdata = {}
-
-        for c in track(psutil.net_connections(kind='inet')):
-
-            # Process Id (Int)
-
-            pdata['pid'] = str(c.pid)
-            
-            print(f'[-] enumerating network process: { pdata["pid"] }')
-
-            # Protocol
-            pdata['proto'] = str(proto_map[(c.family, c.type)])
-
-            # Local Address
-            pdata['lip'] = c.laddr.ip
-            pdata['lport'] = c.laddr.port
-
-            # Local Host Name
-            try:                   
-                pdata['lhost'] = socket.gethostbyaddr(c.laddr.ip)[0]
-            except:
-                pdata['lhost'] = blank
-
-            # Remote Address
-            if c.raddr:
-                #raddr = "%s:%s" % (c.raddr)
-                pdata['rip'] = c.raddr.ip
-                pdata['rport'] = c.raddr.port
-            else:
-                pdata['rip'] = blank
-                pdata['rport'] = blank
-
-                        
-            # Remote Host
-            try:
-                pdata['rhost'] =  socket.gethostbyaddr(c.raddr[0])[0]
-            except:
-                pdata['rhost'] = blank
-            
-            # Status
-            pdata['status'] = c.status
-
-            # Process Name
-            try:
-                pdata['pname'] = psutil.Process(c.pid).name()
-            except:
-                pdata['pname'] = blank
-
-            # Parent Process Id (Int)
-            try:
-                pdata['ppid'] = psutil.Process(c.pid).ppid()
-            except:
-                pdata['ppid'] = blank
-            
-            # Parent Process Id Name
-            try:
-                pdata['ppid_name'] = psutil.Process(pdata['ppid']).name()
-            except:
-                pdata['ppid_name'] = blank
-
-            # Process User
-            try:
-                pdata['puser'] = psutil.Process(c.pid).username()
-            except:
-                pdata['puser'] = blank
-
-            # Process Path
-            try:
-                pdata['ppath'] = psutil.Process(c.pid).exe()
-            except:
-                pdata['ppath'] = blank
-            
-            # Command Line
-
-            try:
-                pdata['cmdline'] = ' '.join(str(each) for each in psutil.Process(c.pid).cmdline())
-            except:
-                pdata['cmdline'] = blank
-            
-            if options.csv:
-                try:
-                    #               'Proto, Local IP, Local Host, Local Port, Remote IP, Remote host, Remote Port, Status,PID,Process name,PPID,PPID Name,User,Path,Cmdline'
-                    outfile.write(f"{pdata['proto']},{pdata['lip']},{pdata['lhost']},{pdata['lport']},{pdata['rip']},{pdata['rhost']},{pdata['rport']},{pdata['status']},{pdata['pid']},{pdata['pname']},{str(pdata['ppid'])},{pdata['ppid_name']},{pdata['puser']},{pdata['ppath']},{pdata['cmdline']}\n")        
-                except:
-                    outfile.write(f"{pdata['proto']},{pdata['lip']},{pdata['lhost']},{pdata['lport']},{pdata['rip']},{pdata['rhost']},{pdata['rport']},{pdata['status']},{pdata['pid']},-,-,-,-,-,-\n")
-            
-            if options.json:
-                 outfile.write(json.dumps(pdata))
-            
-            if options.display:
-                table.add_row(pdata['pid'], pdata['pname'])
-        
-        if options.display:
-            console = Console()
-            print('')
-            console.print(table)
-            print('')
-
-
+        console = Console()
+        print('')
+        console.print(display_table)
+        print('')
 
     print('[*] Port and process enumeration complete')
-    print(f'[*] Output written to file: {str(Path(outfilename))}')
  
  
 if __name__ == '__main__':
