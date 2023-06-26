@@ -41,8 +41,8 @@ def parseArguments():
 
 
     parser.add_argument(
-        '-c', '--csv', 
-        help='Enable output logging to .csv file.\nFile will be written to netproc_hostname_YYYYmmDD.HHMM.csv\n\
+        '-t', '--tsv', 
+        help='Enable output logging to .tsv file.\nFile will be written to netproc_hostname_YYYYmmDD.HHMM.csv\n\
     ', 
         action=BooleanOptionalAction,
         default=True
@@ -195,21 +195,24 @@ def public_address_filter(pdata_list :list):
     return public_pdata_list
 
 
-def write_csv(outfile_prefix :str, pdata_list :list):
+def write_tsv(outfile_prefix :str, pdata_list :list):
 
-    """ Writes a process data list to a comma-separated value (CSV) file """
+    """ Writes a process data list to a tab-separated value (TSV) file """
 
-    outfilename = outfile_prefix + '.csv'
+    outfilename = outfile_prefix + '.tsv'
     with open(outfilename, 'at') as outfile:
 
-        outfile.write('Proto, Local IP, Local Host, Local Port, Remote address,Remote host, Status,PID,Process name,PPID,PPID Name,User,Path,Command Line' + '\n')
+        headers = ['Proto', 'Local IP', 'Local Host', 'Local Port', 'Remote address','Remote host', 'Remote Port','Status','PID','Process name','PPID','PPID Name','User','Path','Command Line']
+        outfile.write('\t'.join(map(str,headers)) + '\n')
 
         for pdata in pdata_list:
             try:
-                #               'Proto, Local IP, Local Host, Local Port, Remote IP, Remote host, Remote Port, Status,PID,Process name,PPID,PPID Name,User,Path,Cmdline'
-                outfile.write(f"{pdata['proto']},{pdata['lip']},{pdata['lhost']},{pdata['lport']},{pdata['rip']},{pdata['rhost']},{pdata['rport']},{pdata['status']},{pdata['pid']},{pdata['pname']},{str(pdata['ppid'])},{pdata['ppid_name']},{pdata['puser']},{pdata['ppath']},{pdata['cmdline']}\n")        
+                outfile.write(f"{pdata['proto']}\t{pdata['lip']}\t{pdata['lhost']}\t{pdata['lport']}\t{pdata['rip']}\t{pdata['rhost']}\t\
+                              {pdata['rport']}\t{pdata['status']}\t{pdata['pid']}\t{pdata['pname']}\t{str(pdata['ppid'])}\t{pdata['ppid_name']}\t\
+                                {pdata['puser']}\t{pdata['ppath']}\t{pdata['cmdline']}\n")        
             except:
-                outfile.write(f"{pdata['proto']},{pdata['lip']},{pdata['lhost']},{pdata['lport']},{pdata['rip']},{pdata['rhost']},{pdata['rport']},{pdata['status']},{pdata['pid']},-,-,-,-,-,-\n")
+                outfile.write(f"{pdata['proto']}\t{pdata['lip']}\t{pdata['lhost']}\t{pdata['lport']}\t{pdata['rip']}\t{pdata['rhost']}\t\
+                              {pdata['rport']}\t{pdata['status']}\t{pdata['pid']}\t-\t-\t-\t-\t-\t-\n")
     
     print(f'[*] Output written to file: {str(Path(outfilename))}')
 
@@ -238,14 +241,14 @@ def create_display_table(hostname :str, pdata_list :list):
     table = Table(title=f'Process Data for: {hostname}')
     table.add_column("Process Name", style="cyan")
     table.add_column("PID", style="dim cyan", no_wrap=True)
-    table.add_column("Loc Host", style="cyan", no_wrap=True)
-    table.add_column("Loc IP", style="dim cyan", no_wrap=True)
+    table.add_column("Parent Proc", style="cyan", no_wrap=True)
     table.add_column("Loc Port", style="dim cyan", no_wrap=True)
     table.add_column("Rem Host", style="cyan", no_wrap=True)
     table.add_column("Rem IP", style="dim cyan", no_wrap=True)
     table.add_column("Rem Port", style="dim cyan", no_wrap=True)
+    table.add_column("Command", style="dim cyan")
     for pdata in pdata_list:
-        table.add_row(pdata['pname'], pdata['pid'],pdata['lhost'],pdata['lip'],pdata['lport'],pdata['rhost'],pdata['rip'],pdata['rport'])
+        table.add_row(pdata['pname'], pdata['pid'],pdata['ppid_name'],pdata['lport'],pdata['rhost'],pdata['rip'],pdata['rport'],pdata['cmdline'])
 
     return table
 
@@ -271,8 +274,8 @@ def main():
     if options.public:
         process_list = public_address_filter(process_list)
 
-    if options.csv:
-        write_csv(outfile_prefix, process_list)
+    if options.tsv:
+        write_tsv(outfile_prefix, process_list)
 
     if options.json:
         write_json(outfile_prefix, process_list)

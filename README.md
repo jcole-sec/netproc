@@ -23,3 +23,8 @@ or
 ```
 python3 build.py
 ```
+
+### Demo
+```
+python .\netproc.py -d --no-tsv -p
+```

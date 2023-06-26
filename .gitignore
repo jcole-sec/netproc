@@ -6,6 +6,7 @@ venv
 *_netproc.csv
 netproc_*.csv
 netproc_*.ndjson
+netproc_*.tsv
 
 # build artifacts
 build
