@@ -2,7 +2,6 @@
  
 import socket
 from socket import AF_INET, SOCK_STREAM, SOCK_DGRAM
-import os
 import time
 from pathlib import Path
 from argparse import ArgumentParser, BooleanOptionalAction, RawTextHelpFormatter
@@ -31,10 +30,10 @@ proto_map = {
 def parseArguments():
     
     parser = ArgumentParser(
-        description='netproc is a script that will:\n\
+        description='netproc is a tool that will:\n\
     * Retrieve a list of all currently running processes\n\
-    * Display process details such as status, user, path, and parent process\n\
-    * Display network connection details related to each process\n\
+    * Display and/or log process details such as status, user, path, and parent process\n\
+    * Display and/or log network connection details related to each process\n\
     ',
         formatter_class=RawTextHelpFormatter,
         epilog='For support, contact https://github.com/jcole-sec.\n ',
@@ -223,7 +222,7 @@ def write_json(outfile_prefix :str, pdata_list :list):
 
     with open(outfilename, 'at') as outfile:
         for pdata in pdata_list:
-            outfile.write(json.dumps(pdata),'\n')
+            outfile.write(json.dumps(pdata) + '\n')
         
     print(f'[*] Output written to file: {str(Path(outfilename))}')
 
