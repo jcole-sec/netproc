@@ -3,10 +3,10 @@ env
 venv
 
 # output logs
-*_netproc.csv
 netproc_*.csv
-netproc_*.ndjson
 netproc_*.tsv
+netproc_*.json
+netproc_*.ndjson
 
 # build artifacts
 build
