@@ -42,7 +42,7 @@ def parseArguments():
 
     parser.add_argument(
         '-t', '--tsv', 
-        help='Enable output logging to .tsv file.\nFile will be written to netproc_hostname_YYYYmmDD.HHMM.csv\n\
+        help='Enable output logging to tab-separate value (TSV) file.\nFile will be written to netproc_hostname_YYYYmmDD.HHMM.tsv\n\
     ', 
         action=BooleanOptionalAction,
         default=True
@@ -50,7 +50,7 @@ def parseArguments():
 
     parser.add_argument(
         '-j', '--json', 
-        help='Enable output logging to .ndjson file.\nFile will be written to netproc_hostname_YYYYmmDD.HHMM.json\n\
+        help='Enable output logging to a new-line delimited JSON file.\nFile will be written to netproc_hostname_YYYYmmDD.HHMM.json\n\
     ', 
         action=BooleanOptionalAction,
         default=False
@@ -221,7 +221,7 @@ def write_json(outfile_prefix :str, pdata_list :list):
 
     """ Writes a process data list to a newline-delimited (ND) JSON file """
 
-    outfilename = outfile_prefix + '.ndjson'
+    outfilename = outfile_prefix + '.json'
 
     with open(outfilename, 'at') as outfile:
         for pdata in pdata_list:
@@ -264,7 +264,7 @@ def main():
     outfile_prefix = f'netproc_{hostname}_{datetime}'
        
 
-    print('[*] Port and process enumeration initiated')
+    print('[*] Networked process enumeration initiated')
 
     process_list = []
 
@@ -289,7 +289,7 @@ def main():
         console.print(display_table)
         print('')
 
-    print('[*] Port and process enumeration complete')
+    print('[*] Networked process enumeration complete')
  
  
 if __name__ == '__main__':
