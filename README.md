@@ -52,7 +52,7 @@ pip3 install -r requirements.txt
 
 Install for executable build:
 ```
-pip3 install -r requirements.txt
+pip3 install -r requirements-build.txt
 ```
 
 
