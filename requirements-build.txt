@@ -5,8 +5,9 @@ markdown-it-py==3.0.0
 mdurl==0.1.2
 pefile==2023.2.7
 psutil==6.0.0
-Pygments==2.17.2
-pyinstaller==6.5.0
-pyinstaller-hooks-contrib==2024.3
+psutil==5.9.8
+pyinstaller-hooks-contrib==2024.7
+pyinstaller==6.9.0
+Pygments==2.18.0
 pywin32-ctypes==0.2.2
 rich==13.7.1
