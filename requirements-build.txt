@@ -9,5 +9,5 @@ psutil==5.9.8
 pyinstaller-hooks-contrib==2024.7
 pyinstaller==6.16.0
 Pygments==2.18.0
-pywin32-ctypes==0.2.2
+pywin32-ctypes==0.2.3
 rich==13.7.1
