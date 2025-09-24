@@ -6,7 +6,7 @@ mdurl==0.1.2
 pefile==2023.2.7
 psutil==6.0.0
 psutil==5.9.8
-pyinstaller-hooks-contrib==2024.7
+pyinstaller-hooks-contrib==2025.9
 pyinstaller==6.16.0
 Pygments==2.18.0
 pywin32-ctypes==0.2.2
